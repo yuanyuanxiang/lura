@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/luraproject/lura/v2/encoding"
+	"github.com/luraproject/lura/v2/logging"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -173,6 +174,118 @@ type ServiceConfig struct {
 	// ClientTLS is used to configure the http default transport
 	// with TLS parameters
 	ClientTLS *ClientTLS `mapstructure:"client_tls"`
+
+	// InfraConfig user defined configurations
+	InfraConfig *InfraConfig `json:"InfraConfig,omitempty" mapstructure:"InfraConfig"`
+}
+
+// SystemInfo 系统信息.
+type SystemInfo struct {
+	ViidID         string // 视图库编码
+	ProductName    string // 产品名称
+	ProductVersion string // 产品版本
+	NginxBind      string // NGINX入口
+	BaseConfigPath string // 配置文件目录
+	ProductMode    string // 产品模式
+	DevopsPassword string // Devops密码
+	Perftest       bool   // 性能测试开关
+}
+
+// ProcessInfo 进程信息.
+type ProcessInfo struct {
+	BindAddr    string // 程序绑定地址
+	APITimeout  int    // 超时时间
+	APICacheTTL int    // 缓存TTL
+	IsDebug     bool   // 是否调试模式
+}
+
+// MySQLConfig MYSQL配置.
+type MySQLConfig struct {
+	Username string // 用户名称
+	Password string // 用户密码
+	Host     string // 数据库地址
+	DB       string // 数据库名称
+	Port     int    // 数据库端口
+}
+
+// EsConfig ES配置.
+type EsConfig struct {
+	User      string // 用户名
+	Pwd       string // 密码
+	Addr      string // 地址串
+	ConnTimes int    // 链接失败重试次数
+}
+
+// KafkaConfig KAFKA配置.
+type KafkaConfig struct {
+	Command      string // 命令行输入的卡夫卡地址
+	MsgBatchSize int    // 单包数据最大个数
+}
+
+// EtcdConfig ETCD配置.
+type EtcdConfig struct {
+	Addr    string // ETCD集群地址
+	Timeout int    // 超时时间
+}
+
+// GspConfig GSP配置.
+type GspConfig struct {
+	AccessKey string // 账号
+	SecretKey string // 密钥
+	Addrs     string // S3服务的地址
+	Regions   string // 作用域
+	Asyn      bool   // 是否异步存图
+}
+
+// RedisConfig REDIS配置.
+type RedisConfig struct {
+	Addr     string // 缓存地址
+	Password string // 密码
+	BloomTTL int    // 布隆过滤器TTL
+	Parallel int    // 并发数
+}
+
+// KvdbConfig KV数据库配置.
+type KvdbConfig struct {
+	DBName           string  // 数据库名称,必填
+	Username         string  // cassandra 用户名
+	Password         string  // cassandra 密码
+	Addr             string  // cassandra IP:port列表
+	Compress         string  // 压缩方法
+	CacheTTL         int     // 数据缓存时间（天）
+	MemoryTTL        float64 // 内存缓存时间（小时）
+	MemoryMax        float64 // 缓存数据的大小限制(GB)
+	TTLCheckInterval int     // 检测TTL的间隔（秒）
+}
+
+// JcvtConfig JSON转换器配置.
+type JcvtConfig struct {
+	TemplateDir string // 模板目录
+}
+
+// InfraConfig is a type to store extra configurations for customized behaviours.
+type InfraConfig struct {
+	private map[string]interface{} // 存储一些私有数据, 必须支持多线程访问
+	Log     logging.Logger         // 插件所使用的日志
+	Jcvt    *JcvtConfig            `json:"jcvt"`
+	Mysql   *MySQLConfig           `json:"mysql"`
+	ES      *EsConfig              `json:"es"`
+	Gsp     *GspConfig             `json:"gsp"`
+	Kafka   *KafkaConfig           `json:"kafka"`
+	Etcd    *EtcdConfig            `json:"etcd"`
+	SysInfo *SystemInfo            `json:"sysInfo"`
+	Process *ProcessInfo           `json:"process"`
+	Redis   *RedisConfig           `json:"redis"`
+	KVDB    *KvdbConfig            `json:"kvdb"`
+}
+
+func (s *ServiceConfig) NormalizeEndpoints() {
+	subject := NewURIParser()
+	for _, e := range s.Endpoints {
+		params := s.extractPlaceHoldersFromURLTemplate(e.Endpoint, endpointURLKeysPattern)
+		ne := subject.GetEndpointPath(e.Endpoint, params)
+		e.Endpoint = ne
+	}
 }
 
 // AsyncAgent defines the configuration of a single subscriber/consumer to be initialized
@@ -227,6 +340,23 @@ type EndpointConfig struct {
 	HeadersToPass []string `mapstructure:"input_headers"`
 	// OutputEncoding defines the encoding strategy to use for the endpoint responses
 	OutputEncoding string `mapstructure:"output_encoding"`
+	// PluginConfig plugins config
+	Plugins []*PluginConfig `json:"plugins,omitempty" mapstructure:"plugins"`
+}
+
+// PluginConfig is plugin's configuration.
+type PluginConfig struct {
+	// Config 这个配置里面的值是不确定的, 需要根据具体的情况来进行解析
+	Config map[string]interface{} `mapstructure:"config"`
+	// Name 这个是插件的唯一名称
+	Name string `mapstructure:"name"`
+	// Index 这个索引值用来对插件进行排序
+	Index int `mapstructure:"index"`
+}
+
+// EndpointPluginList is a endpoint's plugin list.
+type EndpointPluginList struct {
+	Plugin []*EndpointConfig `json:"Plugin"`
 }
 
 // Backend defines how lura should connect to the backend service (the API resource to consume)
