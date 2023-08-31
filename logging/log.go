@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
-	Package logging provides a simple logger interface and implementations
+Package logging provides a simple logger interface and implementations
 */
 package logging
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -21,6 +22,18 @@ type Logger interface {
 	Error(v ...interface{})
 	Critical(v ...interface{})
 	Fatal(v ...interface{})
+
+	// Log with format
+	Debugf(format string, v ...interface{})
+	Infof(format string, v ...interface{})
+	Warnf(format string, v ...interface{})
+	Errorf(format string, v ...interface{})
+	Fatalf(format string, v ...interface{})
+
+	// Implement StdLogger
+	Printf(format string, v ...interface{})
+	Print(v ...interface{})
+	Println(v ...interface{})
 }
 
 const (
@@ -115,4 +128,36 @@ func (l BasicLogger) prependLog(level string, v ...interface{}) {
 	msg[1] = level
 	copy(msg[2:], v)
 	l.Logger.Println(msg...)
+}
+
+func (l BasicLogger) Debugf(format string, v ...interface{}) {
+	l.Debug(fmt.Sprintf(format, v...))
+}
+
+func (l BasicLogger) Infof(format string, v ...interface{}) {
+	l.Info(fmt.Sprintf(format, v...))
+}
+
+func (l BasicLogger) Warnf(format string, v ...interface{}) {
+	l.Warning(fmt.Sprintf(format, v...))
+}
+
+func (l BasicLogger) Errorf(format string, v ...interface{}) {
+	l.Error(fmt.Sprintf(format, v...))
+}
+
+func (l BasicLogger) Fatalf(format string, v ...interface{}) {
+	l.Fatal(fmt.Sprintf(format, v...))
+}
+
+func (l BasicLogger) Printf(format string, v ...interface{}) {
+	l.Info(fmt.Sprintf(format, v...))
+}
+
+func (l BasicLogger) Print(v ...interface{}) {
+	l.Info(v...)
+}
+
+func (l BasicLogger) Println(v ...interface{}) {
+	l.Info(v...)
 }

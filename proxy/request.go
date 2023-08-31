@@ -4,8 +4,11 @@ package proxy
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"net/textproto"
 	"net/url"
+	"strings"
 )
 
 // Request contains the data to send to the backend
@@ -17,6 +20,54 @@ type Request struct {
 	Body    io.ReadCloser
 	Params  map[string]string
 	Headers map[string][]string
+
+	Data          map[string][]map[string]interface{} // 最小存储单元，<dataType,datalist>
+	Private       map[string]interface{}              // 存储一些私有数据
+	Reserved      map[string]interface{}              // Pipeline转换专用
+	RemoteAddr    string
+	ContentLength int64
+}
+
+func (r *Request) ParseID() string {
+	URL := r.URL.String()
+	index := strings.LastIndex(URL, "/")
+	return URL[index+1:]
+}
+
+// Snapshot 获取数据个数, s用于记录日志.
+func (r *Request) Snapshot() string {
+	var s = fmt.Sprintf("[%s %s %s] ", r.SourceIP(), r.Method, r.Path)
+	if len(r.Data) != 0 {
+		for dataType, arr := range r.Data {
+			s += fmt.Sprintf("'%s' %d; ", dataType, len(arr))
+		}
+	} else {
+		s += "no data; "
+	}
+	return s
+}
+
+// SourceIP 获取用户IP的标准姿势: https://zhuanlan.zhihu.com/p/21354318
+func (r *Request) SourceIP() string {
+	if r == nil {
+		return "127.0.0.2"
+	}
+	if h := r.HeaderGet("X-Real-IP"); h != "" {
+		return h
+	}
+	// X-Forwarded-For: RFC 7239  http://tools.ietf.org/html/rfc7239
+	if h := r.HeaderGet("X-Forwarded-For"); h != "" {
+		n := strings.Index(h, ",")
+		if n == -1 {
+			return h
+		}
+		return h[:n]
+	}
+	s := strings.Index(r.RemoteAddr, ":")
+	if s == -1 {
+		return r.RemoteAddr
+	}
+	return r.RemoteAddr[:s]
 }
 
 // GeneratePath takes a pattern and updates the path of the request
@@ -43,13 +94,14 @@ func (r *Request) GeneratePath(URLPattern string) {
 // function.
 func (r *Request) Clone() Request {
 	return Request{
-		Method:  r.Method,
-		URL:     r.URL,
-		Query:   r.Query,
-		Path:    r.Path,
-		Body:    r.Body,
-		Params:  r.Params,
-		Headers: r.Headers,
+		Method:     r.Method,
+		URL:        r.URL,
+		Query:      r.Query,
+		Path:       r.Path,
+		Body:       r.Body,
+		Params:     r.Params,
+		Headers:    r.Headers,
+		RemoteAddr: r.RemoteAddr,
 	}
 }
 
@@ -90,4 +142,9 @@ func CloneRequestParams(params map[string]string) map[string]string {
 		m[k] = v
 	}
 	return m
+}
+
+// HeaderGet get key from request headers.
+func (r *Request) HeaderGet(key string) string {
+	return textproto.MIMEHeader(r.Headers).Get(key)
 }
