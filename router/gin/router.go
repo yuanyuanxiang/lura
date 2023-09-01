@@ -61,18 +61,22 @@ func DefaultFactory(proxyFactory proxy.Factory, logger logging.Logger) router.Fa
 	)
 }
 
-func DefaultVicgFactory(vicgFactory vicg.VicgFactory, infraFactory vicg.InfraFactory, logger logging.Logger) router.Factory {
-	return NewFactory(
-		Config{
-			Engine:         gin.Default(),
-			Middlewares:    []gin.HandlerFunc{},
-			HandlerFactory: CustomErrorEndpointHandler(logger, server.DefaultToHTTPError),
-			VicgFactory:    vicgFactory,
-			InfraFactory:   infraFactory,
-			Logger:         logger,
-			RunServer:      server.RunServer,
-		},
-	)
+type Option func(*Config)
+
+func DefaultVicgFactory(vicgFactory vicg.VicgFactory, infraFactory vicg.InfraFactory, logger logging.Logger, opts ...Option) router.Factory {
+	cfg := Config{
+		Engine:         gin.Default(),
+		Middlewares:    []gin.HandlerFunc{},
+		HandlerFactory: CustomErrorEndpointHandler(logger, server.DefaultToHTTPError),
+		VicgFactory:    vicgFactory,
+		InfraFactory:   infraFactory,
+		Logger:         logger,
+		RunServer:      server.RunServer,
+	}
+	for _, f := range opts {
+		f(&cfg)
+	}
+	return NewFactory(cfg)
 }
 
 // NewFactory returns a gin router factory with the injected configuration

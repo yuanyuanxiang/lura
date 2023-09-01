@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/plugin/identifycheck"
@@ -44,7 +45,10 @@ func main() {
 	factory := map[string]vicg.VicgPluginFactory{
 		"IdentifyCheck": identifycheck.Factory{},
 	}
-	router := gin.DefaultVicgFactory(vicg.DefaultVicgFactory(log, factory), vicg.DefaultInfraFactory(log), log).NewWithContext(ctx)
+	f := func(cfg *gin.Config) {
+		pprof.Register(cfg.Engine) // 注册pprof
+	}
+	router := gin.DefaultVicgFactory(vicg.DefaultVicgFactory(log, factory), vicg.DefaultInfraFactory(log), log, f).NewWithContext(ctx)
 	router.Run(srvConf)
 }
 
