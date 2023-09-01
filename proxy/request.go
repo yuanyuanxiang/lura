@@ -4,8 +4,10 @@ package proxy
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/textproto"
 	"net/url"
 	"strings"
@@ -147,4 +149,23 @@ func CloneRequestParams(params map[string]string) map[string]string {
 // HeaderGet get key from request headers.
 func (r *Request) HeaderGet(key string) string {
 	return textproto.MIMEHeader(r.Headers).Get(key)
+}
+
+/********* Response Implement ResponseWriter interface *********/
+
+func (resp *Response) Header() http.Header {
+	return resp.Metadata.Headers
+}
+
+func (resp *Response) Write(b []byte) (int, error) {
+	data := map[string]interface{}{}
+	if err := json.Unmarshal(b, &data); err != nil {
+		return 0, err
+	}
+	resp.Data = data
+	return len(b), nil
+}
+
+func (resp *Response) WriteHeader(statusCode int) {
+	resp.Metadata.StatusCode = statusCode
 }
