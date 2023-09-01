@@ -279,6 +279,24 @@ type InfraConfig struct {
 	KVDB    *KvdbConfig            `json:"kvdb"`
 }
 
+// AddPrivateArg 添加私有参数.
+func (infra *InfraConfig) AddPrivateArg(name string, value interface{}) {
+	if infra.private == nil {
+		infra.private = make(map[string]interface{})
+	}
+	infra.private[name] = value
+}
+
+// GetPrivateArg 获取私有参数.
+func (infra *InfraConfig) GetPrivateArg() map[string]interface{} {
+	return infra.private
+}
+
+// GetArgByName 获取单个参数.
+func (infra *InfraConfig) GetArgByName(name string) (value interface{}) {
+	return infra.private[name]
+}
+
 func (s *ServiceConfig) NormalizeEndpoints() {
 	subject := NewURIParser()
 	for _, e := range s.Endpoints {
