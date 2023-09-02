@@ -1,6 +1,6 @@
 module github.com/yuanyuanxiang/lura/v2
 
-replace github.com/luraproject/lura/v2 => github.com/yuanyuanxiang/lura/v2 v2.0.8
+replace github.com/luraproject/lura/v2 => github.com/yuanyuanxiang/lura/v2 v2.0.9
 
 go 1.17
 
