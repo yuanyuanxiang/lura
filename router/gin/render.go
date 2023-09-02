@@ -152,7 +152,7 @@ func noopRender(c *gin.Context, response *proxy.Response) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	response.ModifyHeader(c)
+	response.ModifyGinHeader(c)
 	if response.Io == nil {
 		// 若 response.Data 有数据则调用jsonRender
 		if len(response.Data) != 0 {

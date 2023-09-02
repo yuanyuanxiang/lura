@@ -68,9 +68,7 @@ func CustomErrorEndpointHandler(logger logging.Logger, errF server.ToHTTPError) 
 				}
 			}
 
-			if response != nil {
-				response.ModifyHeader(c)
-			}
+			response.ModifyGinHeader(c)
 
 			c.Header(server.CompleteResponseHeaderName, complete)
 
