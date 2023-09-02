@@ -31,8 +31,7 @@ func main() {
 		CacheTTL:        time.Duration(10) * time.Second,
 		Port:            9000,
 		SequentialStart: true,
-		ExtraConfig:     make(config.ExtraConfig),
-		InfraConfig:     &config.InfraConfig{Log: log},
+		ExtraConfig:     map[string]interface{}{"Hello": "world"},
 	}
 	var err error
 	srvConf.Endpoints, err = ReadPluginDir("plugin")
@@ -48,7 +47,7 @@ func main() {
 	f := func(cfg *gin.Config) {
 		pprof.Register(cfg.Engine) // 注册pprof
 	}
-	router := gin.DefaultVicgFactory(vicg.DefaultVicgFactory(log, factory), vicg.DefaultInfraFactory(log), log, f).NewWithContext(ctx)
+	router := gin.DefaultVicgFactory(vicg.DefaultVicgFactory(log, factory), log, f).NewWithContext(ctx)
 	router.Run(srvConf)
 }
 

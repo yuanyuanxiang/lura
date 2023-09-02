@@ -18,12 +18,14 @@ type Factory struct {
 type Plugin struct {
 	name  string
 	index int
+	infra interface{}
 }
 
-func (e Factory) New(cfg *config.PluginConfig, infra vicg.InfraAPI) (vicg.VicgPlugin, error) {
+func (e Factory) New(cfg *config.PluginConfig, infra interface{}) (vicg.VicgPlugin, error) {
 	return &Plugin{
 		index: cfg.Index,
 		name:  cfg.Name,
+		infra: infra,
 	}, nil
 }
 
