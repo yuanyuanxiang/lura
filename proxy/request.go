@@ -11,6 +11,8 @@ import (
 	"net/textproto"
 	"net/url"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Request contains the data to send to the backend
@@ -23,13 +25,14 @@ type Request struct {
 	Params  map[string]string
 	Headers map[string][]string
 
-	Data          map[string][]map[string]interface{} // 最小存储单元，<dataType,datalist>
+	Data          map[string][]map[string]interface{} // 最小存储单元:<dataType,dataList>
 	Private       map[string]interface{}              // 存储一些私有数据
 	Reserved      map[string]interface{}              // Pipeline转换专用
-	RemoteAddr    string
-	ContentLength int64
+	RemoteAddr    string                              // 远程地址
+	ContentLength int64                               // 请求长度
 }
 
+// ParseID 以/为分隔符解析URL最末尾的id.
 func (r *Request) ParseID() string {
 	URL := r.URL.String()
 	index := strings.LastIndex(URL, "/")
@@ -96,13 +99,14 @@ func (r *Request) GeneratePath(URLPattern string) {
 // function.
 func (r *Request) Clone() Request {
 	return Request{
-		Method:     r.Method,
-		URL:        r.URL,
-		Query:      r.Query,
-		Path:       r.Path,
-		Body:       r.Body,
-		Params:     r.Params,
-		Headers:    r.Headers,
+		Method:  r.Method,
+		URL:     r.URL,
+		Query:   r.Query,
+		Path:    r.Path,
+		Body:    r.Body,
+		Params:  r.Params,
+		Headers: r.Headers,
+
 		RemoteAddr: r.RemoteAddr,
 	}
 }
@@ -168,4 +172,27 @@ func (resp *Response) Write(b []byte) (int, error) {
 
 func (resp *Response) WriteHeader(statusCode int) {
 	resp.Metadata.StatusCode = statusCode
+}
+
+// ModifyHeader 将Response的HTTP头写入目标头中.
+func (resp *Response) ModifyHeader(c *gin.Context) {
+	for key, values := range resp.Metadata.Headers {
+		if key == "Content-Length" {
+			continue
+		}
+		for _, v := range values {
+			var exist bool
+			for _, elem := range c.Writer.Header()[key] {
+				if v == elem {
+					exist = true
+					break
+				}
+			}
+			if exist {
+				continue
+			}
+			c.Writer.Header().Add(key, v)
+		}
+	}
+	c.Status(resp.Metadata.StatusCode)
 }

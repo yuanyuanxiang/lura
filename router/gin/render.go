@@ -152,25 +152,7 @@ func noopRender(c *gin.Context, response *proxy.Response) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	for k, vs := range response.Metadata.Headers {
-		if k == "Content-Length" {
-			continue
-		}
-		for _, v := range vs {
-			var exist bool
-			for _, elem := range c.Writer.Header()[k] {
-				if v == elem {
-					exist = true
-					break
-				}
-			}
-			if exist {
-				continue
-			}
-			c.Writer.Header().Add(k, v)
-		}
-	}
-	c.Status(response.Metadata.StatusCode)
+	response.ModifyHeader(c)
 	if response.Io == nil {
 		// 若 response.Data 有数据则调用jsonRender
 		if len(response.Data) != 0 {
