@@ -59,38 +59,17 @@ func CustomErrorEndpointHandler(logger logging.Logger, errF server.ToHTTPError) 
 
 			complete := server.HeaderIncompleteResponseValue
 
-			if response != nil {
-				if len(response.Data) > 0 {
-					if response.IsComplete {
-						complete = server.HeaderCompleteResponseValue
-						if isCacheEnabled {
-							c.Header("Cache-Control", cacheControlHeaderValue)
-						}
+			if response != nil && len(response.Data) > 0 {
+				if response.IsComplete {
+					complete = server.HeaderCompleteResponseValue
+					if isCacheEnabled {
+						c.Header("Cache-Control", cacheControlHeaderValue)
 					}
 				}
+			}
 
-				for k, vs := range response.Metadata.Headers {
-					// 此时还没有计算返回报文长度，不可将请求的长度赋值
-					if k == "Content-Length" {
-						continue
-					}
-					for _, v := range vs {
-						var exist bool
-						for _, elem := range c.Writer.Header()[k] {
-							if v == elem {
-								exist = true
-								break
-							}
-						}
-						if exist {
-							continue
-						}
-						c.Writer.Header().Add(k, v)
-					}
-				}
-				if response.Metadata.StatusCode != 0 {
-					c.Status(response.Metadata.StatusCode)
-				}
+			if response != nil {
+				response.ModifyHeader(c)
 			}
 
 			c.Header(server.CompleteResponseHeaderName, complete)
@@ -181,13 +160,14 @@ func NewRequest(headersToSend []string) func(*gin.Context, []string) *proxy.Requ
 		}
 
 		return &proxy.Request{
-			URL:           c.Request.URL,
-			Path:          c.Request.URL.Path,
-			Method:        c.Request.Method,
-			Query:         query,
-			Body:          c.Request.Body,
-			Params:        params,
-			Headers:       headers,
+			URL:     c.Request.URL,
+			Path:    c.Request.URL.Path,
+			Method:  c.Request.Method,
+			Query:   query,
+			Body:    c.Request.Body,
+			Params:  params,
+			Headers: headers,
+
 			RemoteAddr:    c.Request.RemoteAddr,
 			ContentLength: c.Request.ContentLength,
 		}

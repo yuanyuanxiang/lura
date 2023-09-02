@@ -12,63 +12,50 @@ import (
 	"github.com/luraproject/lura/v2/config"
 	logger "github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"
+	"github.com/luraproject/lura/v2/router/gin"
 )
 
-// Factory creates proxies based on the received endpoint configuration.
-//
-// Both, factories and backend factories, create proxies but factories are designed as a stack makers
-// because they are intended to generate the complete proxy stack for a given frontend endpoint
-// the app would expose and they could wrap several proxies provided by a backend factory
-type VicgFactory interface {
-	New(cfg *config.EndpointConfig, infra InfraAPI) (proxy.Proxy, error)
-}
+/* ***************************************************************************
+* 代码功能: 默认的代理工厂实现示例
+* 	该代理工厂包含一系列的插件工厂, 创建HTTP接口代理时根据配置生产相应的插件.
+* 	处理HTTP接口时, 将按照插件顺序进行.
+*************************************************************************** */
 
-type VicgPluginFactory interface {
-	New(cfg *config.PluginConfig, infra InfraAPI) (VicgPlugin, error)
-}
-
-// DefaultFactory returns a default http proxy factory with the injected logger
-func DefaultVicgFactory(logger logger.Logger, factory map[string]VicgPluginFactory) VicgFactory {
+// DefaultFactory 创建默认的代理工厂.
+func DefaultVicgFactory(logger logger.Logger, factory map[string]VicgPluginFactory) gin.VicgFactory {
 	return defaultVicgFactory{
 		logger:        logger,
 		pluginFactory: factory,
 	}
 }
 
-type defaultProxyFactory struct {
-	factory proxy.Factory
-}
-
-func (pf defaultProxyFactory) New(cfg *config.EndpointConfig, infra InfraAPI) (proxy.Proxy, error) {
-	return pf.factory.New(cfg)
-}
-
-func NewVicgFactory(factory proxy.Factory) VicgFactory {
-	return defaultProxyFactory{factory: factory}
-}
-
+// defaultVicgFactory 自定义代理工厂.
 type defaultVicgFactory struct {
 	logger        logger.Logger
-	pluginFactory map[string]VicgPluginFactory
+	pluginFactory map[string]VicgPluginFactory // 插件集合
 }
 
-func (pf defaultVicgFactory) createNewPlugin(cfg *config.PluginConfig, infra InfraAPI) (VicgPlugin, error) {
-	f, err := pf.getPluginFactory(cfg.Name)
-	if err != nil {
-		return nil, err
+// createNewPlugin 通过插件工厂创建插件.
+func (pf defaultVicgFactory) createNewPlugin(cfg *config.PluginConfig, infra interface{}) (VicgPlugin, error) {
+	f, ok := pf.pluginFactory[cfg.Name]
+	if !ok {
+		return nil, fmt.Errorf("the plugin '%s' not found", cfg.Name)
 	}
 	return f.New(cfg, infra)
 }
 
-func (pf defaultVicgFactory) getPluginFactory(namespace string) (VicgPluginFactory, error) {
-	if f, ok := pf.pluginFactory[namespace]; ok {
-		return f, nil
-	}
-
-	return nil, fmt.Errorf("the plugin '%s' not found", namespace)
+// Infra 用户自定义结构示例.
+type Infra struct {
+	ExtraConfig map[string]interface{}
 }
 
-func (pf defaultVicgFactory) New(cfg *config.EndpointConfig, infra InfraAPI) (proxy.Proxy, error) {
+// BuildInfra 创建用户自定义结构.
+func (pf defaultVicgFactory) BuildInfra(ctx context.Context, cfg config.ExtraConfig) (infra interface{}, err error) {
+	return &Infra{ExtraConfig: cfg}, nil
+}
+
+// New 创建HTTP接口代理.
+func (pf defaultVicgFactory) New(cfg *config.EndpointConfig, infra interface{}) (proxy.Proxy, error) {
 	plugins := make([]VicgPlugin, len(cfg.Plugins))
 	for i, c := range cfg.Plugins {
 		p, err := pf.createNewPlugin(c, infra)
