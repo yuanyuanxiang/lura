@@ -125,11 +125,7 @@ func noopRender(w http.ResponseWriter, response *proxy.Response) {
 		return
 	}
 
-	for k, vs := range response.Metadata.Headers {
-		for _, v := range vs {
-			w.Header().Add(k, v)
-		}
-	}
+	response.ModifyHTTPHeader(w.Header())
 	if response.Metadata.StatusCode != 0 {
 		w.WriteHeader(response.Metadata.StatusCode)
 	}

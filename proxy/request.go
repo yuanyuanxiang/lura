@@ -174,15 +174,27 @@ func (resp *Response) WriteHeader(statusCode int) {
 	resp.Metadata.StatusCode = statusCode
 }
 
-// ModifyHeader 将Response的HTTP头写入目标头中.
-func (resp *Response) ModifyHeader(c *gin.Context) {
+// ModifyGinHeader 将Response的HTTP头写入目标头中.
+func (resp *Response) ModifyGinHeader(c *gin.Context) {
+	if resp == nil {
+		return
+	}
+	resp.ModifyHTTPHeader(c.Writer.Header())
+	c.Status(resp.Metadata.StatusCode)
+}
+
+// ModifyHTTPHeader 将Response的HTTP头写入目标头中.
+func (resp *Response) ModifyHTTPHeader(h http.Header) {
+	if resp == nil {
+		return
+	}
 	for key, values := range resp.Metadata.Headers {
 		if key == "Content-Length" {
 			continue
 		}
 		for _, v := range values {
 			var exist bool
-			for _, elem := range c.Writer.Header()[key] {
+			for _, elem := range h[key] {
 				if v == elem {
 					exist = true
 					break
@@ -191,8 +203,7 @@ func (resp *Response) ModifyHeader(c *gin.Context) {
 			if exist {
 				continue
 			}
-			c.Writer.Header().Add(key, v)
+			h.Add(key, v)
 		}
 	}
-	c.Status(resp.Metadata.StatusCode)
 }
