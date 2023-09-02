@@ -175,12 +175,14 @@ type ServiceConfig struct {
 	ClientTLS *ClientTLS `mapstructure:"client_tls"`
 }
 
+// NormalizeEndpoints 处理[]*EndpointConfig每个元素, 标准化Endpoint, 设置QueryString.
 func (s *ServiceConfig) NormalizeEndpoints() {
 	subject := NewURIParser()
 	for _, e := range s.Endpoints {
 		params := s.extractPlaceHoldersFromURLTemplate(e.Endpoint, endpointURLKeysPattern)
 		ne := subject.GetEndpointPath(e.Endpoint, params)
 		e.Endpoint = ne
+		e.QueryString = []string{"*"}
 	}
 }
 
