@@ -73,11 +73,7 @@ func CustomEndpointHandlerWithHTTPError(rb RequestBuilder, errF server.ToHTTPErr
 					w.Header().Set(server.CompleteResponseHeaderName, server.HeaderIncompleteResponseValue)
 				}
 
-				for k, vs := range response.Metadata.Headers {
-					for _, v := range vs {
-						w.Header().Add(k, v)
-					}
-				}
+				response.ModifyHTTPHeader(w.Header())
 			} else {
 				w.Header().Set(server.CompleteResponseHeaderName, server.HeaderIncompleteResponseValue)
 				if err != nil {
