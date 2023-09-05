@@ -59,20 +59,16 @@ func CustomErrorEndpointHandler(logger logging.Logger, errF server.ToHTTPError) 
 
 			complete := server.HeaderIncompleteResponseValue
 
-			if response != nil && len(response.Data) > 0 {
+			if response != nil {
 				if response.IsComplete {
 					complete = server.HeaderCompleteResponseValue
 					if isCacheEnabled {
 						c.Header("Cache-Control", cacheControlHeaderValue)
 					}
 				}
-
-				for k, vs := range response.Metadata.Headers {
-					for _, v := range vs {
-						c.Writer.Header().Add(k, v)
-					}
-				}
 			}
+
+			response.ModifyGinHeader(c)
 
 			c.Header(server.CompleteResponseHeaderName, complete)
 
@@ -162,12 +158,16 @@ func NewRequest(headersToSend []string) func(*gin.Context, []string) *proxy.Requ
 		}
 
 		return &proxy.Request{
+			URL:     c.Request.URL,
 			Path:    c.Request.URL.Path,
 			Method:  c.Request.Method,
 			Query:   query,
 			Body:    c.Request.Body,
 			Params:  params,
 			Headers: headers,
+
+			RemoteAddr:    c.Request.RemoteAddr,
+			ContentLength: c.Request.ContentLength,
 		}
 	}
 }

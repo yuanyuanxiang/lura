@@ -175,6 +175,17 @@ type ServiceConfig struct {
 	ClientTLS *ClientTLS `mapstructure:"client_tls"`
 }
 
+// NormalizeEndpoints 处理[]*EndpointConfig每个元素, 标准化Endpoint, 设置QueryString.
+func (s *ServiceConfig) NormalizeEndpoints() {
+	subject := NewURIParser()
+	for _, e := range s.Endpoints {
+		params := s.extractPlaceHoldersFromURLTemplate(e.Endpoint, endpointURLKeysPattern)
+		ne := subject.GetEndpointPath(e.Endpoint, params)
+		e.Endpoint = ne
+		e.QueryString = []string{"*"}
+	}
+}
+
 // AsyncAgent defines the configuration of a single subscriber/consumer to be initialized
 // and maintained by the lura service
 type AsyncAgent struct {
@@ -227,6 +238,23 @@ type EndpointConfig struct {
 	HeadersToPass []string `mapstructure:"input_headers"`
 	// OutputEncoding defines the encoding strategy to use for the endpoint responses
 	OutputEncoding string `mapstructure:"output_encoding"`
+	// Plugins plugin list with configuration
+	Plugins []*PluginConfig `json:"plugins,omitempty" mapstructure:"plugins"`
+}
+
+// PluginConfig is plugin's configuration.
+type PluginConfig struct {
+	// Config 这个配置里面的值是不确定的, 需要根据具体的情况来进行解析
+	Config map[string]interface{} `mapstructure:"config"`
+	// Name 这个是插件的唯一名称
+	Name string `mapstructure:"name"`
+	// Index 这个索引值用来对插件进行排序
+	Index int `mapstructure:"index"`
+}
+
+// EndpointPluginList is a endpoint's plugin list.
+type EndpointPluginList struct {
+	Plugin []*EndpointConfig `json:"Plugin"`
 }
 
 // Backend defines how lura should connect to the backend service (the API resource to consume)
