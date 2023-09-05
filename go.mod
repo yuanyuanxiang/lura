@@ -1,6 +1,4 @@
-module github.com/yuanyuanxiang/lura/v2
-
-replace github.com/luraproject/lura/v2 => github.com/yuanyuanxiang/lura/v2 v2.0.12
+module github.com/luraproject/lura/v2
 
 go 1.17
 
@@ -16,7 +14,6 @@ require (
 
 require (
 	github.com/gin-contrib/pprof v1.4.0
-	github.com/luraproject/lura/v2 v2.3.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.12.0
 )
