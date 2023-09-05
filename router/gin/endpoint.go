@@ -59,7 +59,7 @@ func CustomErrorEndpointHandler(logger logging.Logger, errF server.ToHTTPError) 
 
 			complete := server.HeaderIncompleteResponseValue
 
-			if response != nil && len(response.Data) > 0 {
+			if response != nil {
 				if response.IsComplete {
 					complete = server.HeaderCompleteResponseValue
 					if isCacheEnabled {
