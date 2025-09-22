@@ -1,0 +1,24 @@
+{
+    "Plugin": [
+        {
+            "Endpoint": "/VIID/APEs",
+            "Method": "POST",
+            "Plugins": [
+                {
+                    "Name": "IdentifyCheck",
+                    "Index": 1
+                }
+            ]
+        },
+        {
+            "Endpoint": "/VIID/APEs",
+            "Method": "PUT",
+            "Plugins": [
+                {
+                    "Name": "IdentifyCheck",
+                    "Index": 1
+                }
+            ]
+        }
+    ]
+}
