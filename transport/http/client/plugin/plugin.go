@@ -101,9 +101,13 @@ func open(pluginName string, rcf RegisterClientFunc, logger logging.Logger) (err
 		}
 	}
 
+	RegisterExtraComponents(r)
+
 	registerer.RegisterClients(rcf)
 	return
 }
+
+var RegisterExtraComponents = func(interface{}) {}
 
 // Plugin is the interface of the loaded plugins
 type Plugin interface {

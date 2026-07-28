@@ -169,9 +169,13 @@ func open(ctx context.Context, pluginName string, rmf RegisterModifierFunc, logg
 		lr.RegisterContext(ctx)
 	}
 
+	RegisterExtraComponents(r)
+
 	registerer.RegisterModifiers(rmf)
 	return
 }
+
+var RegisterExtraComponents = func(interface{}) {}
 
 // Plugin is the interface of the loaded plugins
 type Plugin interface {
